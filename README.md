@@ -1,6 +1,7 @@
 # Kubernetes operator demo
 
-Demo setup to showcase Kubernetes operator based on Python Kopf Framework. The operator handles custom resources which are database table definitions and interacts with a locally deployed PostgreSQL database.
+Demo setup to showcase Kubernetes operator based on Python Kopf Framework. The operator handles custom resources which 
+are database table definitions and interacts with a locally deployed PostgreSQL database.
 
 ## Scope
 
@@ -69,24 +70,87 @@ $ pip3 install -r requirements
 [...]
 ```
 
-## Functionality
+## Development
+### Kubernetes Resources
+Let's create a custom resource definition. This configures how our database table definitions in Kubernetes will look like.
 
-### on create
-- DB Verbindung erzeugen
-- Tabelle anlegen
-- Status in CR aktualisieren
+```
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databasetables.kopf.demo
+spec:
+  scope: Namespaced
+  group: kopf.demo
+  names:
+    kind: DatabaseTable
+    plural: databasetables
+    singular: databasetable
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+```
 
-### on update
-- diff überprüfen: Wurde Spalte gelöscht oder geändert: Fehlermeldung ausgeben
-- DB Verbindung erzeugen
-- neue Spalten hinzufügen
-- Status in CR aktualisieren
+Next step is to create our very first database table definition:
+```
+apiVersion: kopf.demo/v1
+kind: DatabaseTable
+metadata:
+  name: website-users
+spec:
+  tableName: WEBSITE_USERS
+  columns:
+    - USER_ID: integer
+    - USER_NAME: varchar(50)
+    - USER_EMAIL: varchar(100)
+    - SIGNUP_DATE: date
+    - LAST_LOGIN: timestamp
+  primaryKey: USER_ID
+```
 
-### on delete
-- DB Verbindung erzeugen
-- Tabelle löschen
-- Status in CR aktualisieren
-- 
+These objects will now be applied to Kubernetes:
+```
+$ kubectl apply -f crd.yaml
+customresourcedefinition.apiextensions.k8s.io/databasetables.kopf.demo created
+
+$ kubectl apply -f cr.yaml
+databasetable.kopf.demo/website-users created
+
+$ kubectl get DatabaseTables
+NAME            AGE
+website-users   13s
+```
+
+### Operator Functionality
+We want our operator to handle the Kubernetes resources for us. Thus we define what to do when a custom resource is added,
+updated or removed:
+
+*on create*
+- connect to our database
+- create the table according to the specification in the resource
+- update the status in the resource
+
+*on update*
+- check the diff
+- if a column was removed or changed: log an error and abort the update
+- if a column was added: connect to the database and update the table structure
+- update the status in the resource
+
+*on delete*
+- connect to our database
+- drop the table
+
 ## Tear Down Demo Setup
 Remove PostgreSQL database and persistent volume:
 ```
