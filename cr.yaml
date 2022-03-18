@@ -1,0 +1,13 @@
+apiVersion: kopf.demo/v1
+kind: DatabaseTable
+metadata:
+  name: website-users
+spec:
+  tableName: WEBSITE_USERS
+  columns:
+    - USER_ID: integer
+    - USER_NAME: varchar(50)
+    - USER_EMAIL: varchar(100)
+    - SIGNUP_DATE: date
+    - LAST_LOGIN: timestamp
+  primaryKey: USER_ID
