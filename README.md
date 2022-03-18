@@ -1,4 +1,4 @@
-# Kubernetes operator demo
+# Kubernetes Operator Demo
 
 Demo setup to showcase Kubernetes operator based on Python Kopf Framework. The operator handles custom resources which 
 are database table definitions and interacts with a locally deployed PostgreSQL database.
@@ -150,6 +150,20 @@ updated or removed:
 *on delete*
 - connect to our database
 - drop the table
+
+### Run The Operator
+To run the Python program locally, no build infrastructure is needed. Just start the program from command line and watch 
+it's output. Right after startup, it will handle the custom resource we've added to Kubernetes earlier:
+
+```
+$ kopf run database-table-operator.py --namespace=default
+[2022-03-18 12:12:40,130] kopf._core.engines.a [INFO    ] Initial authentication has been initiated.
+[2022-03-18 12:12:40,136] kopf.activities.auth [INFO    ] Activity 'login_via_client' succeeded.
+[2022-03-18 12:12:40,136] kopf._core.engines.a [INFO    ] Initial authentication has finished.
+[2022-03-18 12:12:40,533] root                 [INFO    ] Create handler invoked by custom resource website-users. Creating database table.
+[2022-03-18 12:12:40,534] kopf.objects         [INFO    ] [default/website-users] Handler 'create_handler' succeeded.
+[2022-03-18 12:12:40,534] kopf.objects         [INFO    ] [default/website-users] Creation is processed: 1 succeeded; 0 failed.
+```
 
 ## Tear Down Demo Setup
 Remove PostgreSQL database and persistent volume:
