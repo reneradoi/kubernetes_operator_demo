@@ -56,8 +56,6 @@ def get_database_connection():
     secret = kubernetes.client.CoreV1Api().read_namespaced_secret('postgresql', 'default').data
     db_passwd = b64decode(secret['password']).decode('utf-8')
 
-    logging.info(f"database password from secret: {db_passwd}")
-
     conn = psycopg2.connect(
         database=db_name,
         user=db_user,

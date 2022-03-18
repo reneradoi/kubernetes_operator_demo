@@ -3,6 +3,9 @@
 Demo setup to showcase Kubernetes operator based on Python Kopf Framework. The operator handles custom resources which 
 are database table definitions and interacts with a locally deployed PostgreSQL database.
 
+Kopf is an open source project, originally being developed at Zalando, now taken care of by the community at 
+https://github.com/nolar/kopf. Further information can be found here: https://kopf.readthedocs.io/en/stable/.
+
 ## Scope
 
 ```
@@ -35,7 +38,6 @@ are database table definitions and interacts with a locally deployed PostgreSQL 
 +                                                                                                                     +
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ```
-
 
 ## Demo Setup
 ### Prerequisites
@@ -76,10 +78,22 @@ demodb=> \d
 Did not find any relations.
 ```
 
-Empty database _demodb_ is now available.
+Empty database _demodb_ is now available. Let's create port forwarding from our localhost to the pod, in order to connect
+to the database within the pod. Run the task in the background for continuing in this shell:
+
+```
+$ kubectl port-forward pod/postgresql-0 5432:5432
+Forwarding from 127.0.0.1:5432 -> 5432
+Forwarding from [::1]:5432 -> 5432
+
+[CTRL+Z]
+[1]+  Stopped                 kubectl port-forward pod/postgresql-0 5432:5432
+$ bg
+[1]+ kubectl port-forward pod/postgresql-0 5432:5432 &
+```
 
 ### Setup Python and Demo Repository
-The Kubernetes operator will be developed with Python, thus make sure you have Python3 installed:
+The Kubernetes operator is based on Python, thus make sure you have Python3 installed:
 ```
 $ which python3
 /usr/bin/python3
@@ -88,15 +102,17 @@ $ which pip3
 /usr/bin/pip3
 ```
 
-Clone this repository into your local Linux (e.g. WSL2 Ubuntu):
+Clone this repository into your local Linux (e.g. WSL2 Ubuntu) and install the required Python packages:
 ```
 $ git clone https://codehub.sva.de/Rene.Radoi/kubernetes_operator_demo.git
 Cloning into 'kubernetes_operator_demo'...
 [...]
 
 $ cd kubernetes_operator_demo/
-$ ls req*
-requirements
+$ cat requirements
+kopf
+kubernetes
+psycopg2-binary
 
 $ pip3 install -r requirements
 [...]
