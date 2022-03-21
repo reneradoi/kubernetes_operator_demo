@@ -12,21 +12,22 @@ import psycopg2
 def create_handler(spec, name, patch, **kwargs):
     logging.info(f"Create handler invoked by custom resource {name}. Creating database table.")
 
-    """Check if spec is valid. Expected items: tableName, columns, primaryKey."""
-    table_name = spec.get('tableName')
-    if table_name is None:
-        raise kopf.PermanentError("Config item 'tableName' is missing in spec.")
-    logging.debug(f"table name: {table_name}")
+    table_name, table_keys, table_columns = check_spec(spec)
 
-    table_columns = spec.get('columns')
-    if table_columns is None:
-        raise kopf.PermanentError("Config item 'columns' is missing in spec.")
-    logging.debug(f"table columns: {table_columns}")
+    """"Put together SQL statement to create the table in the database"""
+    create_statement = "CREATE TABLE " + table_name + " ("
+    for column, datatype in table_columns:
+        create_statement = create_statement + column + datatype + ","
+    create_statement = create_statement + "PRIMARY KEY (" + table_keys + "));"
 
-    table_keys = spec.get('primaryKey').split()
-    logging.debug(f"table primary key: {table_keys}")
+    logging.debug(f"SQL statement: {create_statement}")
 
-    conn = get_database_connection()
+    conn, cur = get_database_connection()
+
+    #cur.execute(create_statement)
+    #conn.commit()
+
+    conn.close()
 
 
 @kopf.on.update('databasetable')
@@ -39,7 +40,7 @@ def delete_handler(name, spec, **kwargs):
     logging.info(f"Delete handler invoked by custom resource {name}. Deleting database table.")
 
     table_name = spec.get('tableName')
-    conn = get_database_connection()
+    conn, cur = get_database_connection()
 
 
 def get_database_connection():
@@ -63,4 +64,26 @@ def get_database_connection():
         host=db_host,
         port=db_port)
 
-    return conn
+    cur = conn.cursor()
+
+    return conn, cur
+
+
+def check_spec(spec):
+    """Check if spec is valid. Expected items: tableName, columns, primaryKey."""
+    table_name = spec.get('tableName')
+    if table_name is None:
+        raise kopf.PermanentError("Config item 'tableName' is missing in spec.")
+    logging.debug(f"table name: {table_name}")
+
+    table_columns = spec.get('columns')
+    if table_columns is None:
+        raise kopf.PermanentError("Config item 'columns' is missing in spec.")
+    logging.debug(f"table columns: {table_columns}")
+
+    table_keys = spec.get('primaryKey').split()
+    if table_keys is None:
+        raise kopf.PermanentError("Config item 'primaryKey' is missing in spec.")
+    logging.debug(f"table primary key: {table_keys}")
+
+    return table_name, table_keys, table_columns
