@@ -192,7 +192,7 @@ updated or removed:
 *on update*
 - check the diff
 - if a column was removed or changed: log an error and abort the update
-- if a column was added: connect to the database and update the table structure
+- if a column was added, table name or primary key was changed: connect to the database and update the table structure
 - update the status in the resource
 
 *on delete*
@@ -204,7 +204,7 @@ To run the Python program locally, no build infrastructure is needed. Just start
 it's output. Right after startup, it will handle the custom resource we've added to Kubernetes earlier:
 
 ```
-$ kopf run database_table_operator.py --namespace=default
+$ kopf run database_table_operator.py --namespace=default --verbose
 [2022-03-18 12:12:40,130] kopf._core.engines.a [INFO    ] Initial authentication has been initiated.
 [2022-03-18 12:12:40,136] kopf.activities.auth [INFO    ] Activity 'login_via_client' succeeded.
 [2022-03-18 12:12:40,136] kopf._core.engines.a [INFO    ] Initial authentication has finished.
@@ -229,11 +229,11 @@ demodb=> \d
 ### Things to consider
 1. Run your operator **namespaced**. It would be possible that it watches resources clusterwide, but general recommendation is not.
 2. In a Kubernetes cluster you will probably need a **service account** for the operator with the respective permissions to
-watch and update resources. An example for this can be found in the file service-account.yaml.
+watch and update resources. An example for this can be found in the file `service-account.yaml`.
 3. When you want to ship your operator to production (or other stages), you can easily package it into a **docker image**. 
-It doesn't even require a Linux distribution, just Python. Please refer to _Dockerfile_ for further information.
+It doesn't even require a Linux distribution, just Python. Please refer to `Dockerfile` for further information.
 4. **Don't mess with the responsibilities**. If your operator handles the database tables, don't create, update or drop them
-manually anymore. This would result in errors while trying to apply changes to the resources, because via finalizers 
+otherwise anymore. This would result in errors while trying to apply changes to the resources, because via finalizers 
 Kubernetes is waiting for the operator to acknowledge the action. If you cannot guarantee single responsibility, add
 error handling to your operator. And just for information, with this dirty hack, you can solve deadlock situations: 
 `kubectl patch databasetable website-users -p '{"metadata": {"finalizers": []}}' --type merge`
