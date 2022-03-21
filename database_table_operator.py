@@ -16,8 +16,9 @@ def create_handler(spec, name, patch, **kwargs):
 
     """"Put together SQL statement to create the table in the database"""
     create_statement = "CREATE TABLE " + table_name + " ("
-    for column, datatype in table_columns:
-        create_statement = create_statement + column + datatype + ","
+    for column in table_columns:
+        for column_name, column_type in column.items():
+            create_statement = create_statement + column_name + " " + column_type + ", "
     create_statement = create_statement + "PRIMARY KEY (" + table_keys + "));"
 
     logging.debug(f"SQL statement: {create_statement}")
@@ -81,7 +82,7 @@ def check_spec(spec):
         raise kopf.PermanentError("Config item 'columns' is missing in spec.")
     logging.debug(f"table columns: {table_columns}")
 
-    table_keys = spec.get('primaryKey').split()
+    table_keys = spec.get('primaryKey')
     if table_keys is None:
         raise kopf.PermanentError("Config item 'primaryKey' is missing in spec.")
     logging.debug(f"table primary key: {table_keys}")
