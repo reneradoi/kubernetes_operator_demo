@@ -32,8 +32,23 @@ def create_handler(spec, name, patch, **kwargs):
 
 
 @kopf.on.update('databasetable')
-def update_handler(spec, name, diff, patch, **kwargs):
+def update_handler(spec, name, old, new, patch, **kwargs):
     logging.info(f"Update handler invoked by custom resource {name}. Updating database table.")
+    logging.debug(f"Spec before update: {old}")
+    logging.debug(f"Spec after update: {new}")
+
+    table_name, table_keys, table_columns = check_spec(spec)
+
+    conn, cur = get_database_connection()
+
+    if old[spec].get('tableName') != table_name:
+        logging.info(f"update table name: {table_name}")
+
+    if old[spec].get('primaryKey') != table_keys:
+        logging.info(f"update primary Key: {table_keys}")
+
+    if old[spec].get('columns') != table_columns:
+        logging.info(f"update columns")
 
 
 @kopf.on.delete('databasetable')
