@@ -204,14 +204,39 @@ To run the Python program locally, no build infrastructure is needed. Just start
 it's output. Right after startup, it will handle the custom resource we've added to Kubernetes earlier:
 
 ```
-$ kopf run database-table-operator.py --namespace=default
+$ kopf run database_table_operator.py --namespace=default
 [2022-03-18 12:12:40,130] kopf._core.engines.a [INFO    ] Initial authentication has been initiated.
 [2022-03-18 12:12:40,136] kopf.activities.auth [INFO    ] Activity 'login_via_client' succeeded.
 [2022-03-18 12:12:40,136] kopf._core.engines.a [INFO    ] Initial authentication has finished.
 [2022-03-18 12:12:40,533] root                 [INFO    ] Create handler invoked by custom resource website-users. Creating database table.
+[2022-03-18 12:12:40,533] root                 [DEBUG   ] SQL statement: CREATE TABLE WEBSITE_USERS (USER_ID integer, USER_NAME varchar(50), USER_EMAIL varchar(100), SIGNUP_DATE date, LAST_LOGIN timestamp, PRIMARY KEY (USER_ID));
 [2022-03-18 12:12:40,534] kopf.objects         [INFO    ] [default/website-users] Handler 'create_handler' succeeded.
 [2022-03-18 12:12:40,534] kopf.objects         [INFO    ] [default/website-users] Creation is processed: 1 succeeded; 0 failed.
 ```
+
+A quick look to the database confirms that the table has been created:
+```
+$ psql -h localhost -U demouser demodb
+[...]
+demodb=> \d
+             List of relations
+ Schema |     Name      | Type  |  Owner
+--------+---------------+-------+----------
+ public | website_users | table | demouser
+(1 row)
+```
+
+### Things to consider
+1. Run your operator **namespaced**. It would be possible that it watches resources clusterwide, but general recommendation is not.
+2. In a Kubernetes cluster you will probably need a **service account** for the operator with the respective permissions to
+watch and update resources. An example for this can be found in the file service-account.yaml.
+3. When you want to ship your operator to production (or other stages), you can easily package it into a **docker image**. 
+It doesn't even require a Linux distribution, just Python. Please refer to _Dockerfile_ for further information.
+4. **Don't mess with the responsibilities**. If your operator handles the database tables, don't create, update or drop them
+manually anymore. This would result in errors while trying to apply changes to the resources, because via finalizers 
+Kubernetes is waiting for the operator to acknowledge the action. If you cannot guarantee single responsibility, add
+error handling to your operator. And just for information, with this dirty hack, you can solve deadlock situations: 
+`kubectl patch databasetable website-users -p '{"metadata": {"finalizers": []}}' --type merge`
 
 ## Tear Down Demo Setup
 Remove PostgreSQL database and persistent volume:
