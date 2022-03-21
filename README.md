@@ -251,3 +251,5 @@ data-postgresql-0   Bound    pvc-bdd6f64d-37b4-4344-bb27-acbab1b1ee06   8Gi     
 $ kubectl delete pvc data-postgresql-0
 persistentvolumeclaim "data-postgresql-0" deleted
 ```
+
+If the port forwarding was running in the background, don't forget to remove that as well: `pkill -f "port-forward"`
