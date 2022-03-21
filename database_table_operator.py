@@ -46,9 +46,19 @@ def update_handler(spec, name, old, new, patch, **kwargs):
     if old['spec'].get('primaryKey') != table_keys:
         logging.info(f"Update primary key: {table_keys}")
         cur.execute(f"ALTER TABLE {table_name} DROP CONSTRAINT {table_name}_pkey, ADD PRIMARY KEY ({table_keys});")
+        conn.commit()
 
     if old['spec'].get('columns') != table_columns:
-        logging.info(f"update columns")
+        logging.info(f"Update columns")
+        for column in table_columns:
+            for column_name, column_type in column.items():
+                if not column_name in old['spec'].get('columns'):
+                    logging.debug(f"New column: {column_name}")
+                    cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+                    conn.commit()
+
+    conn.close()
+    patch.status['operation'] = "UPDATED"
 
 
 @kopf.on.delete('databasetable')
