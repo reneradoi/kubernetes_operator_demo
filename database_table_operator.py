@@ -23,10 +23,14 @@ def create_handler(spec, name, patch, **kwargs):
 
     logging.debug(f"SQL statement: {create_statement}")
 
-    conn, cur = get_database_connection()
-    cur.execute(create_statement)
-    conn.commit()
-    conn.close()
+    try:
+        conn, cur = get_database_connection()
+        cur.execute(create_statement)
+        conn.commit()
+        conn.close()
+    except Exception as error:
+        patch.status['operation'] = "CREATE FAILED"
+        raise kopf.TemporaryError(f"Error while creating table {table_name}: {error}")
 
     patch.status['operation'] = "CREATED"
 
@@ -36,44 +40,53 @@ def update_handler(spec, name, old, new, patch, **kwargs):
     logging.info(f"Update handler invoked by custom resource {name}. Updating database table.")
     table_name, table_keys, table_columns = check_spec(spec)
 
-    conn, cur = get_database_connection()
+    try:
+        conn, cur = get_database_connection()
 
-    if old['spec'].get('tableName') != table_name:
-        logging.info(f"update table name: {table_name}")
-        cur.execute(f"ALTER TABLE {old['spec'].get('tableName')} RENAME TO {table_name};")
-        conn.commit()
+        if old['spec'].get('tableName') != table_name:
+            logging.info(f"update table name: {table_name}")
+            cur.execute(f"ALTER TABLE {old['spec'].get('tableName')} RENAME TO {table_name};")
+            conn.commit()
 
-    if old['spec'].get('primaryKey') != table_keys:
-        logging.info(f"Update primary key: {table_keys}")
-        cur.execute(f"ALTER TABLE {table_name} DROP CONSTRAINT {table_name}_pkey, ADD PRIMARY KEY ({table_keys});")
-        conn.commit()
+        if old['spec'].get('primaryKey') != table_keys:
+            logging.info(f"Update primary key: {table_keys}")
+            cur.execute(f"ALTER TABLE {table_name} DROP CONSTRAINT {table_name}_pkey, ADD PRIMARY KEY ({table_keys});")
+            conn.commit()
 
-    if old['spec'].get('columns') != table_columns:
-        logging.info(f"Update columns")
-        for column in table_columns:
-            if column not in old['spec'].get('columns'):
-                logging.debug(f"Add column {column}")
-                for column_name, column_type in column.items():
-                    cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-                    conn.commit()
+        if old['spec'].get('columns') != table_columns:
+            logging.info(f"Update columns")
+            for column in table_columns:
+                if column not in old['spec'].get('columns'):
+                    logging.debug(f"Add column {column}")
+                    for column_name, column_type in column.items():
+                        cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+                        conn.commit()
 
-        for old_column in old['spec'].get('columns'):
-            if old_column not in table_columns:
-                raise kopf.PermanentError(f"Error while updating: Removing columns is not supported.")
+            for old_column in old['spec'].get('columns'):
+                if old_column not in table_columns:
+                    raise kopf.PermanentError(f"Error while updating: Removing column {old_column} is not supported.")
 
-    conn.close()
+        conn.close()
+    except Exception as error:
+        patch.status['operation'] = "UPDATE FAILED"
+        raise kopf.TemporaryError(f"Error while updating table {table_name}: {error}")
+
     patch.status['operation'] = "UPDATED"
 
 
 @kopf.on.delete('databasetable')
-def delete_handler(name, spec, **kwargs):
+def delete_handler(name, spec, patch, **kwargs):
     logging.info(f"Delete handler invoked by custom resource {name}. Deleting database table.")
 
     table_name = spec.get('tableName')
-    conn, cur = get_database_connection()
-    cur.execute(f"DROP TABLE {table_name};")
-    conn.commit()
-    conn.close()
+    try:
+        conn, cur = get_database_connection()
+        cur.execute(f"DROP TABLE {table_name};")
+        conn.commit()
+        conn.close()
+    except Exception as error:
+        patch.status['operation'] = "DELETION FAILED"
+        raise kopf.TemporaryError(f"Error while deleting table {table_name}: {error}")
 
 
 def get_database_connection():
