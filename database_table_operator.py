@@ -24,11 +24,11 @@ def create_handler(spec, name, patch, **kwargs):
     logging.debug(f"SQL statement: {create_statement}")
 
     conn, cur = get_database_connection()
-
-    #cur.execute(create_statement)
-    #conn.commit()
-
+    cur.execute(create_statement)
+    conn.commit()
     conn.close()
+
+    patch.status['operation'] = "CREATED"
 
 
 @kopf.on.update('databasetable')
@@ -42,6 +42,9 @@ def delete_handler(name, spec, **kwargs):
 
     table_name = spec.get('tableName')
     conn, cur = get_database_connection()
+    cur.execute(f"DROP TABLE {table_name};")
+    conn.commit()
+    conn.close()
 
 
 def get_database_connection():
