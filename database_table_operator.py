@@ -51,11 +51,15 @@ def update_handler(spec, name, old, new, patch, **kwargs):
     if old['spec'].get('columns') != table_columns:
         logging.info(f"Update columns")
         for column in table_columns:
-            for column_name, column_type in column.items():
-                if not column_name in old['spec'].get('columns'):
-                    logging.debug(f"New column: {column_name}")
+            if column not in old['spec'].get('columns'):
+                logging.debug(f"Add column {column}")
+                for column_name, column_type in column.items():
                     cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
                     conn.commit()
+
+        for old_column in old['spec'].get('columns'):
+            if old_column not in table_columns:
+                raise kopf.PermanentError(f"Error while updating: Removing columns is not supported.")
 
     conn.close()
     patch.status['operation'] = "UPDATED"
