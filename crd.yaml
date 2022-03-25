@@ -20,12 +20,7 @@ spec:
             spec:
               type: object
               properties:
-                tableName:
-                  type: string
-                columns:
-                  type: array
-                primaryKey:
-                  type: string
+              required: ["tableName","columns","primaryKey"]
               x-kubernetes-preserve-unknown-fields: true
             status:
               type: object
