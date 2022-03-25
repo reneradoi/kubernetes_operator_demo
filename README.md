@@ -172,7 +172,7 @@ These objects will now be applied to Kubernetes:
 $ kubectl apply -f crd.yaml
 customresourcedefinition.apiextensions.k8s.io/databasetables.kopf.demo created
 
-$ kubectl apply -f cr.yaml
+$ kubectl apply -f example-cr.yaml
 databasetable.kopf.demo/website-users created
 
 $ kubectl get DatabaseTables
