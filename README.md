@@ -225,17 +225,64 @@ demodb=> \d
  public | website_users | table | demouser
 (1 row)
 ```
+## Deployment
+### Namespacing
+In theory it is possible to run the operator and the resources with cluster-wide scope, but this is not recommended in 
+general. Please use one or several namespaces in the Kubernetes cluster to separate concerns. The example files in this 
+repo are all namespaced, though the namespace in your production stage should probably not be *default* like in this demo.  
 
-### Things to consider
-1. Run your operator **namespaced**. It would be possible that it watches resources clusterwide, but general recommendation is not.
-2. In a Kubernetes cluster you will probably need a **service account** for the operator with the respective permissions to
-watch and update resources. An example for this can be found in the file `service-account.yaml`.
-3. When you want to ship your operator to production (or other stages), you can easily package it into a **docker image**. 
-It doesn't even require a Linux distribution, just Python. Please refer to `Dockerfile` for further information.
-4. **Don't mess with the responsibilities**. If your operator handles the database tables, don't create, update or drop them
-otherwise anymore. This would result in errors while trying to apply changes to the resources, because via finalizers 
-Kubernetes is waiting for the operator to acknowledge the action. If you cannot guarantee single responsibility, add
-error handling to your operator. And just for information, with this dirty hack, you can solve deadlock situations: 
+### Docker Image
+Running the operator like shown above should only be done for development or testing purposes, not for production use. 
+Instead package the operator into a docker image and ship it to production (or other stages). The image doesn't even
+require a Linux distribution, just Python.
+
+Here's an example for building the image, you can also find it as `Dockerfile` in the source code:
+```
+FROM python:3.8                                                                     ---[1]
+ENV WATCH_NAMESPACE=default                                                         ---[2]
+
+ADD database_table_operator.py /src/database_table_operator.py                      ---[3]
+
+RUN pip install kopf \                                                              ---[4]
+    && pip install kubernetes \
+    && pip install psycopg2-binary \
+    && groupadd -g 1000 operator \                                                  ---[5]
+    && useradd -g operator -u 1000 -m operator
+
+USER operator                                                                       ---[6]
+
+CMD kopf run --namespace=${WATCH_NAMESPACE} /src/database_table_operator.py         ---[7]
+```
+
+The steps explained:
+- [1] - download Python from docker registry
+- [2] - add environment variable to configure namespace
+- [3] - add python program to directory */src* of the image
+- [4] - install the required python packages via pip (could also be done with the requirements file, shown here for understanding)
+- [5] - add a non-root user/group to run the image (security!)
+- [6] - switch to non-root user
+- [7] - start the operator in the configured (or default) namespace
+
+### Service Account and Roles/Permissions
+This demo uses minikube for showcasing, no need to use a service account or specific permissions for this demo. But when 
+you deploy to a non-local Kubernetes cluster, you will surely need a service account and the respective permissions to
+watch and update resources.
+
+Our demo operator would require the following permissions:
+- create, list, watch, patch resources of type *databasetables*
+- create events
+- get secrets
+
+An example for setting up the account, roles and rolebindings can be found in the file `service-account.yaml` in this repo.
+
+### Don't mess with the responsibilities
+Finally, a general remark: If your operator handles the database tables, don't create, update or drop them
+otherwise anymore! This would result in errors while trying to apply changes to the resources, because via finalizers 
+Kubernetes is waiting for the operator to acknowledge the action. 
+
+If you cannot guarantee single responsibility, add extensive error handling to your operator. 
+
+And just for information, with this dirty hack, you can solve deadlock situations: 
 `kubectl patch databasetable website-users -p '{"metadata": {"finalizers": []}}' --type merge`
 
 ## Tear Down Demo Setup
