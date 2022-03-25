@@ -226,6 +226,8 @@ demodb=> \d
 (1 row)
 ```
 ## Deployment
+*The following topics are hints and recommendations for using an operator in production. They are not mandatory for this demo though.*
+
 ### Namespacing
 In theory it is possible to run the operator and the resources with cluster-wide scope, but this is not recommended in 
 general. Please use one or several namespaces in the Kubernetes cluster to separate concerns. The example files in this 
