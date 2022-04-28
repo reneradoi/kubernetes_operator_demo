@@ -144,6 +144,8 @@ spec:
           properties:
             spec:
               type: object
+              properties:
+              required: ["tableName","columns","primaryKey"]
               x-kubernetes-preserve-unknown-fields: true
             status:
               type: object
