@@ -41,7 +41,7 @@ https://github.com/nolar/kopf. Further information can be found here: https://ko
 
 ## Demo Setup
 ### Prerequisites
-- docker
+- docker (remark: in WSL you need to start dockerd from outside / Windows. More information: https://wiki.sva.de/pages/viewpage.action?pageId=348849552#DockerDesktop?ZeigthereureAlternativen!-Alternative1-WSL2undDockerEngineBlueWindows)
 - minikube: https://minikube.sigs.k8s.io/docs/start/
 - helm 3.2.0+
 
