@@ -104,7 +104,7 @@ $ which pip3
 
 Clone this repository into your local Linux (e.g. WSL2 Ubuntu) and install the required Python packages:
 ```
-$ git clone https://codehub.sva.de/Rene.Radoi/kubernetes_operator_demo.git
+$ git clone https://github.com/reneradoi/kubernetes_operator_demo.git
 Cloning into 'kubernetes_operator_demo'...
 [...]
 
